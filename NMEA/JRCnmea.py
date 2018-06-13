@@ -70,18 +70,8 @@ class JRCnmea:
     def parse(self, src, checkThisSum = True):
         result = {'status': self.noError}
 
-        if src[0] == '$': # standard NMEA?
+        if src[0] in ['$', '!']:
             body = src[1:-3]
-
-        elif src[0] == 'R': # AIS????
-            ooo = src.split('!')
-            body = ooo[1][0:-3]
-
-        else:
-            body = ""
-
-        if body != "":
-
             if checkThisSum == True and int(src[-2:], 16) != self.__calcSum(body):
                 result['status'] = self.errorCheckSumNoMatch
             else:
@@ -100,7 +90,6 @@ if __name__ == "__main__":
 
     src = [
         "$GPRMC,085120.307,A,3541.1493,N,13945.3994,E,000.0,240.3,181211,,,A*6A",
-        "R[ 1] 2017-06-15 01:20:18.598 !AIVDM,1,1,,B,155eET0P01WK:Jb0ecdEMwvR2H;a,0*74",
         ]
 
     for s in src:
