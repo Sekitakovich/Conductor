@@ -1,18 +1,34 @@
+import base64
 import numpy as np
 
 class AISDecoder:
-    tableD = {
-        '@': 'A', 'A': 'B', 'B': 'C', 'C': 'D', 'D': 'E', 'E': 'F', 'F': 'G', 'G': 'H',
-        'H': 'I', 'I': 'J', 'J': 'K', 'K': 'L', 'L': 'M', 'M': 'N', 'N': 'O', 'O': 'P',
-        'P': 'Q', 'Q': 'R', 'R': 'S', 'S': 'T', 'T': 'U', 'U': 'V', 'V': 'W', 'W': 'X',
-        'X': 'Y', 'Y': 'Z', 'Z': 'a', '[': 'b', '\\': 'c', ']': 'd', '^': 'e', '_': 'f',
-        ' ': 'g', '!': 'h', '"': 'i', '#': 'j', '$': 'k', '%': 'l', '&': 'm', '\'': 'n',
-        '(': 'o', ')': 'p', '*': 'q', '+': 'r', ',': 's', '-': 't', '.': 'u', '/': 'v',
-        '0': 'w', '1': 'x', '2': 'y', '3': 'z', '4': '0', '5': '1', '6': '2', '7': '3',
-        '8': '4', '9': '5', ':': '6', ';': '7', '<': '8', '=': '9', '>': '+', '?': '/'
-    }
 
+    ''' see https://en.wikipedia.org/wiki/Six-bit_character_code '''
+
+    def __init__(self):
+        itu = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_ !\"#$%&'()*+,-./0123456789:;<=>?"
+        b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+
+        self.tableD = str.maketrans(dict(zip(itu, b64))); # print(self.tableD)
+        self.tableE = str.maketrans(dict(zip(b64, itu)))
+
+    def decode(self, src):
+        b64 = bytes(src.translate(self.tableD), encoding='utf-8')
+        print("itu = [%s] b64(%s) = [%s]" % (src, type(b64), b64))
+        bin = np.frombuffer(base64.b64decode(b64), dtype=np.uint8)
+
+        offset = 0
+        bits = []
+        for d in bin:
+            print("%d %02x (%s)" % (offset, d, format(d, '08b')))
+            bits.append(format(d, '08b'))
+            offset += 1
+
+        print(''.join(bits))
 
 if __name__ == '__main__':
-    itu = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^- !\"#$%&'()*+,_./0123456789:;<=>?"
-    print(itu)
+
+    ooo = AISDecoder()
+
+    src = "377gg:002?aw@0ND29GR=AT<21r1"
+    ooo.decode(src)
