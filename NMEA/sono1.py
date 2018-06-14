@@ -14,6 +14,7 @@ class UDPreceiver(threading.Thread):
     maxSize = (1024 * 4)
 
     nmea = JRCnmea.JRCnmea()
+    tagBlock = JRCnmea.TagBlock450()
 
     def __init__(self, group, port):
         super(UDPreceiver, self).__init__()
@@ -30,14 +31,19 @@ class UDPreceiver(threading.Thread):
             while True:
                 udpPacket = sock.recv(self.maxSize)  # use blocking
 
-                nmeaPart = udpPacket[6 + 1:-2]  # skip top 6bytes+'\', drop CR+LF
-                ppp = nmeaPart.decode('utf-8')  # bytes array to string
+                print(udpPacket)
+
+                format450 = udpPacket[6 + 1:-2]  # skip top 6bytes+'\', drop CR+LF
+                ppp = format450.decode('utf-8')  # bytes array to string
                 xxx = ppp.split('\\')
                 nmea_body = xxx[1]
+                tag_body = xxx[0]
 
+#                print("From %s:%s [%s]" % (self.thisGroup, self.thisPort, ppp))
 
-                print("From %s:%s [%s]" % (self.thisGroup, self.thisPort, ppp))
-                result = self.nmea.parse(nmea_body, False)
+                self.tagBlock.parse(tag_body)
+
+                result = self.nmea.parse(nmea_body, True)
                 if result['status'] == self.nmea.noError:
                     print(result['body'])
                 else:

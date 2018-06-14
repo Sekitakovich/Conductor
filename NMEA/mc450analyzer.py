@@ -60,7 +60,7 @@ class MC450Analyzer:
 
         return result
 
-    def parse(self, body):
+    def parse(self, body: object) -> object:
 
         result = {'error': self.ErrorCode.noError}
 
@@ -101,7 +101,7 @@ class MC450Analyzer:
 if __name__ == '__main__':
     f = MC450Analyzer()
 
-    src = "UdObC0\\s:AI0117,n:25*39\\!AIVDM,1,1,,A,D04757Q6aM6D,0*6A\r\n".encode('utf-8')
+    src = "UdPbC0\\s:AI0117,n:25*39\\!AIVDM,1,1,,A,D04757Q6aM6D,0*6A\r\n".encode('utf-8')
 
     print(type(src))
     print(src)

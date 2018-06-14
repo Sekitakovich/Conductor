@@ -1,5 +1,22 @@
 import numpy as np
 
+class TagBlock450:
+
+    ''' decode 450 tagblock as dict'''
+
+    noError = 0
+    errorBadFormat = 1
+    errorCheckSumNoMatch = 2
+    errorUnkownType = 3
+
+    def parse(self, src):
+        result = {'status': self.noError}
+        xxx = src.split('*')
+        body = xxx[0]
+        csum = xxx[1]
+
+        print("TagBlock = [%s]" % body)
+
 class JRCnmea:
     '''
     ------------------------------------------------------------------------------
@@ -87,6 +104,7 @@ class JRCnmea:
 if __name__ == "__main__":
 
     nmea = JRCnmea()
+    tagBlock = TagBlock450()
 
     src = [
         "$GPRMC,085120.307,A,3541.1493,N,13945.3994,E,000.0,240.3,181211,,,A*6A",

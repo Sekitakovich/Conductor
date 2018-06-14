@@ -5,6 +5,9 @@ import time
 
 import mc450analyzer
 
+class RunningData:
+    pos = {'lon': 0.0, 'lat': 0.0}
+
 class UDPreceiver(threading.Thread):
     """ あまり好かんが日本語で書いてみよう """
 
@@ -14,11 +17,14 @@ class UDPreceiver(threading.Thread):
     maxSize = (1024 * 4)
 
     analyzer = mc450analyzer.MC450Analyzer()
+    database = None
 
-    def __init__(self, group, port):
+    def __init__(self, group, port, database):
         super(UDPreceiver, self).__init__()
         self.thisGroup = group
         self.thisPort = port
+        self.thisName = name
+        self.database = database
 
     def run(self):
         with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as sock:
@@ -28,18 +34,24 @@ class UDPreceiver(threading.Thread):
                             socket.inet_aton(self.thisGroup) + socket.inet_aton(UDPreceiver.thisIPV4))
 
             while True:
-                udpPacket = sock.recv(self.maxSize)  # use blocking
-
-                print(udpPacket)
-
+                udpPacket: object = sock.recv(self.maxSize)  # use blocking
                 result = self.analyzer.parse(udpPacket)
                 if result['error'] == self.analyzer.ErrorCode.noError:
-                    print(result)
+                    tagblock = result['tagblock']
+                    sentence = result['sentence']
+                    print("from %s(%s): %s" % (tagblock['s'], tagblock['n'], sentence))
+
+                    if sentence['type'] == "RMC":
+                        self.database.pos['lon'] = sentence['lon']
+                        self.database.pos['lat'] = sentence['lat']
+
                 else:
                     print("Error %s at %s" % (result['error'], result))
 
 
 if __name__ == '__main__':
+
+    database = RunningData()
 
     member = [
         {'name': 'GPS1', 'address': '239.192.0.1', 'port': 60001},
@@ -55,11 +67,11 @@ if __name__ == '__main__':
         address = talker['address']
         port = talker['port']
         print("Start %s" % name)
-        UDPreceiver(address, port).start()
+        UDPreceiver(address, port, database).start()
 
     counter = 0
     while True:
-        print("Loop counter = %d" % counter)
+        print("#### %d %s" % (counter, database.pos))
         counter += 1
         time.sleep(1)
 
