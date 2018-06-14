@@ -19,12 +19,13 @@ class UDPreceiver(threading.Thread):
     analyzer = mc450analyzer.MC450Analyzer()
     database = None
 
-    def __init__(self, group, port, database):
+    def __init__(self, name, group, port, database, ev):
         super(UDPreceiver, self).__init__()
         self.thisGroup = group
         self.thisPort = port
-        self.thisName = name
+        self.name = name
         self.database = database
+        self.ev = ev
 
     def run(self):
         with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as sock:
@@ -39,11 +40,13 @@ class UDPreceiver(threading.Thread):
                 if result['error'] == self.analyzer.ErrorCode.noError:
                     tagblock = result['tagblock']
                     sentence = result['sentence']
-                    print("from %s(%s): %s" % (tagblock['s'], tagblock['n'], sentence))
+                    print("from %s: %s" % (tagblock['s'], sentence))
 
                     if sentence['type'] == "RMC":
                         self.database.pos['lon'] = sentence['lon']
                         self.database.pos['lat'] = sentence['lat']
+
+                        self.ev.set()
 
                 else:
                     print("Error %s at %s" % (result['error'], result))
@@ -52,6 +55,7 @@ class UDPreceiver(threading.Thread):
 if __name__ == '__main__':
 
     database = RunningData()
+    ev = threading.Event()
 
     member = [
         {'name': 'GPS1', 'address': '239.192.0.1', 'port': 60001},
@@ -67,13 +71,16 @@ if __name__ == '__main__':
         address = talker['address']
         port = talker['port']
         print("Start %s" % name)
-        UDPreceiver(address, port, database).start()
+        talker['thread'] = UDPreceiver(name, address, port, database, ev).start()
 
     counter = 0
     while True:
-        print("#### %d %s" % (counter, database.pos))
-        counter += 1
-        time.sleep(1)
+        if ev.wait(1) == False:
+            print("--- Timeout ---")
+        else:
+            ev.clear()
+            print("#### %d %s" % (counter, database.pos))
+            counter += 1
 
 
 
