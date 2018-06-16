@@ -2,7 +2,8 @@ import base64
 import numpy as np
 
 class AISMessageDecoder:
-    name = [
+    description = [
+        "",
         "Position Report Class A",
         "Position Report Class A (Assigned schedule)",
         "Position Report Class A (Response to interrogation)",
@@ -59,7 +60,7 @@ class AISMessageDecoder:
         for c in range(len(b64) % 4):  # padding ...
             b64 += '='
 
-        print("ais(%s) = [%s](%d) b64(%s) = [%s](%d)" % (type(src), src, len(src), type(b64), b64, len(b64)))
+#        print("ais(%s) = [%s](%d) b64(%s) = [%s](%d)" % (type(src), src, len(src), type(b64), b64, len(b64)))
 
         bin = np.frombuffer(base64.b64decode(b64), dtype=np.uint8)
 
@@ -67,13 +68,29 @@ class AISMessageDecoder:
 
         thisType = int(bits[0:5 + 1], 2)
 
-        header = {'type': thisType, 'repeat': int(bits[6:7 + 1], 2), 'MMSI': int(bits[8:37 + 1], 2)}
+        header = {'type': thisType, 'repeat': int(bits[6:7 + 1], 2), 'MMSI': int(bits[8:37 + 1], 2), 'desc': self.description[thisType]}
         result['header'] = header
 
         if thisType == 21:
             body = {
                 'aid-type': int(bits[38:42 + 1], 2),
                 'name': self.__ascii6String(bits[43:162 + 1]),
+                'accuracy': int(bits[163:163 + 1], 2),
+                'lon': int(bits[164:191 + 1], 2),
+                'lat': int(bits[192:218 + 1], 2),
+                'to-bow': int(bits[219:227+1], 2),
+                'to-stern': int(bits[228:236 + 1], 2),
+                'to-port': int(bits[237:242 + 1], 2),
+                'to-starboard': int(bits[243:248 + 1], 2),
+                'epfd': int(bits[249:252 + 1], 2),
+                'second': int(bits[253:258 + 1], 2),
+                'off-position': int(bits[259:259 + 1], 2),
+                'regional': int(bits[260:267 + 1], 2),
+                'raim': int(bits[268:268 + 1], 2),
+                'virtual-aid': int(bits[268:268 + 1], 2),
+                'assigned': int(bits[268:268 + 1], 2),
+                '(Spare)': int(bits[271:271 + 1], 2),
+#                '(Name Extension)': int(bits[272:360 + 1], 2),
             }
             result['body'] = body;
 
