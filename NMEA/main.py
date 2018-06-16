@@ -10,29 +10,8 @@ import ais
 class RunningData:
     JBGPS = {'lon': 0.0, 'lat': 0.0, 'ns': '', 'ew': '', 'utc': '', 'from': ''}
     JBHDG = {'heading': 0.0, 'from': ''}
-    AIS = {
-        'typeStatic': {},
-        'typeDynamic': {},
-        'typeMessage': {},
-        'typeAtoN': {
-            'mid': 0,
-            'sid': 0,
-            'type': 0,
-            'name': "",
-            'acc': 0,
-            'lon': 0,
-            'lat': 0,
-            'fwd': 0,
-            'bk': 0,
-            'left': 0,
-            'right': 0,
-            'ts': "",
-            'opi': 0,
-            'status': 0,
-            'vflg': 0,
-            'exname': "",
-        },
-    }
+
+    AtoN = {}
 
     stampGPS = {'level': 0, 'last': dt.now()}
 
@@ -105,6 +84,20 @@ class UDPreceiver(threading.Thread):
                         if ais['error'] != self.aisDecorder.errorCode.noError:
                             print(ais)
 
+                        else:
+                            if ais['header']['type'] == 21:
+                                header = ais['header']
+                                body = ais['body']
+                                mmsi = header['mmsi']
+                                data = dict(sid=mmsi, type=body['aidType'], name=body['name'], acc=body['accuracy'],
+                                            lon=body['lon'], lat=body['lat'], fwd=body['toBow'], bk=body['toStern'],
+                                            left=body['toPort'], right=body['toStarboard'],
+                                            ts=dt.now().strftime("%Y-%m-%d %H:%M:%S"), opi=body['offPosition'],
+                                            status=0, vflg=body['virtualAid'], exname=body['nameExtension'])
+                                self.database.AtoN[mmsi] = {'at': dt.now(), 'data': data}
+
+                                self.ev.set()
+
                 else:
                     print("Error %s at %s" % (result['error'], result))
 
@@ -133,8 +126,11 @@ if __name__ == '__main__':
     counter = 0
     while True:
         if ev.wait(60) == False:
-            print("--- Timeout ---")
+            print("--- at Checkpoint ---")
+
         else:
             ev.clear()
+            for ship, data in database.AtoN.items():
+                print("%d = %s" % (ship, data))
             print("#### %d %s %s" % (counter, database.JBGPS, database.JBHDG))
             counter += 1

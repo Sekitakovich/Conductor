@@ -1,8 +1,12 @@
 import numpy as np
 import enum
+from datetime import datetime as dt
+
 
 class MC450Analyzer:
     ''' functions for 450/NMEA '''
+
+    modelDT = dt.utcnow()
 
     class ErrorCode(enum.Enum):
         noError = 0
@@ -19,10 +23,51 @@ class MC450Analyzer:
         type = body[0][2:5]
         item = {'prefix': prefix, 'type': type}
 
-        if type == 'RMC':
-            item['lon'] = body[1]
-            item['lat'] = body[3]
+        # -----------------------------------------------------------------
+        if type == 'GGA':
+            #            print(body)
 
+            hhmmss = body[1]
+            item['lat'] = body[2]
+            item['ns'] = body[3]
+            item['lon'] = body[4]
+            item['ew'] = body[5]
+            item['mode'] = body[6]
+
+            item['utc'] = self.modelDT.replace(
+                hour=int(hhmmss[0:2]),
+                minute=int(hhmmss[2:4]),
+                second=int(hhmmss[4:6]),
+                microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+
+        # -----------------------------------------------------------------
+        elif type == 'RMC':
+            #            print(body)
+
+            hhmmss = body[1]
+
+            item['va'] = body[2]
+            item['lat'] = body[3]
+            item['ns'] = body[4]
+            item['lon'] = body[5]
+            item['ew'] = body[6]
+            item['knot'] = body[7]
+            item['head'] = body[8]
+
+            ddmmyy = body[9]
+
+            item['mode'] = body[12]
+
+            item['utc'] = self.modelDT.replace(
+                year=int(ddmmyy[4:6]) + 2000,
+                month=int(ddmmyy[2:4]),
+                day=int(ddmmyy[0:2]),
+                hour=int(hhmmss[0:2]),
+                minute=int(hhmmss[2:4]),
+                second=int(hhmmss[4:6]),
+                microsecond=0).strftime("%Y-%m-%d %H:%M:%S")
+
+        # -----------------------------------------------------------------
         elif type == 'ZDA':
             hhmmss = body[1]
             item['hh'] = hhmmss[0:2]
@@ -33,15 +78,18 @@ class MC450Analyzer:
             item['mm'] = body[3]
             item['yyyy'] = body[4]
 
-        elif type == 'GGA':
-            item['nn'] = body[7]
 
+        # -----------------------------------------------------------------
         elif type == 'DTM':
             item['code'] = body[1]
 
+
+        # -----------------------------------------------------------------
         elif type == 'ROT':
             item['rate'] = body[1]
 
+
+        # -----------------------------------------------------------------
         elif type == 'VDM':
             item['tn'] = body[1]
             item['sn'] = body[2]
@@ -49,6 +97,16 @@ class MC450Analyzer:
             item['ac'] = body[4]
             item['message'] = body[5]
             item['fb'] = body[6]
+
+        # -----------------------------------------------------------------
+        elif type == 'THS':
+            item['heading'] = body[1]
+            item['va'] = body[2]
+
+        # -----------------------------------------------------------------
+        elif type == 'HDT':
+            item['heading'] = body[1]
+            item['va'] = ''
 
         return item
 
